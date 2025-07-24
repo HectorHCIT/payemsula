@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(npm run verify-recaptcha:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": []
+  }
+}

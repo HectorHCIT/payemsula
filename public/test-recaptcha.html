@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Manual reCAPTCHA</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-button { 
+            margin: 10px; 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        }
+        .success { background-color: #4CAF50; color: white; }
+        .error { background-color: #f44336; color: white; }
+        .warning { background-color: #ff9800; color: white; }
+        .info { background-color: #2196F3; color: white; }
+        #results { 
+            margin-top: 20px; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            background-color: #f9f9f9; 
+        }
+        .log-entry { 
+            margin: 5px 0; 
+            padding: 5px; 
+            border-left: 3px solid #007cba; 
+            background-color: white; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Test Manual de reCAPTCHA Enterprise v3</h1>
+    
+    <div>
+        <h2>Pruebas Disponibles:</h2>
+        <button class="test-button success" onclick="testRecaptcha('select_cd_info', false)">
+            🔍 Búsqueda Normal
+        </button>
+        <button class="test-button success" onclick="testRecaptcha('submit_card_payment', false)">
+            💳 Pago Normal
+        </button>
+        <button class="test-button error" onclick="testRecaptcha('select_cd_info', true)">
+            🚨 Búsqueda Sospechosa
+        </button>
+        <button class="test-button warning" onclick="testRecaptcha('submit_card_payment', true)">
+            🤖 Pago Sospechoso
+        </button>
+        <button class="test-button info" onclick="runStressTest()">
+            ⚡ Prueba de Estrés
+        </button>
+        <button class="test-button" onclick="clearResults()">
+            🗑️ Limpiar Resultados
+        </button>
+    </div>
+    
+    <div id="results">
+        <h3>Resultados de Pruebas:</h3>
+        <div id="log-container">
+            <p>Haz clic en un botón para comenzar las pruebas...</p>
+        </div>
+    </div>
+
+    <script>
+        function addLog(message, type = 'info') {
+            const container = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function testRecaptcha(action, simulateError = false) {
+            addLog(`🧪 Iniciando prueba: ${action} ${simulateError ? '(simulando error)' : ''}`, 'info');
+            
+            try {
+                const testData = {
+                    action,
+                    simulateError,
+                    timestamp: Date.now()
+                };
+
+                if (simulateError) {
+                    testData.suspiciousPattern = 'rapid_clicks';
+                    testData.userAgent = 'bot-like-agent';
+                    testData.clickPattern = 'automated';
+                }
+
+                const response = await fetch('/api/verify-captcha', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        recaptchaToken: 'test-token-' + Date.now(),
+                        action,
+                        ...testData
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog(`✅ Prueba exitosa: Score ${((result.score || 0) * 100).toFixed(0)}% - ${result.message}`, 'success');
+                } else {
+                    addLog(`❌ Prueba fallida: ${result.reason}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ Error en la prueba: ${error.message}`, 'error');
+            }
+        }
+
+        async function runStressTest() {
+            addLog('🔥 Iniciando prueba de estrés...', 'warning');
+            
+            const tests = [
+                { name: 'Búsqueda Rápida 1', action: 'select_cd_info' },
+                { name: 'Búsqueda Rápida 2', action: 'select_cd_info' },
+                { name: 'Pago Rápido 1', action: 'submit_card_payment' },
+                { name: 'Búsqueda Rápida 3', action: 'select_cd_info' }
+            ];
+            
+            for (const test of tests) {
+                await testRecaptcha(test.action, false);
+                await new Promise(resolve => setTimeout(resolve, 500)); // 500ms entre pruebas
+            }
+            
+            addLog('🏁 Prueba de estrés completada', 'info');
+        }
+
+        function clearResults() {
+            document.getElementById('log-container').innerHTML = '<p>Resultados limpiados. Haz clic en un botón para comenzar las pruebas...</p>';
+        }
+
+        // Mostrar información inicial
+        addLog('🚀 Sistema de pruebas cargado. Variables de entorno disponibles en desarrollo.', 'info');
+        addLog('💡 Este test simula las llamadas al endpoint de verificación sin requerir reCAPTCHA real.', 'info');
+    </script>
+</body>
+</html>
