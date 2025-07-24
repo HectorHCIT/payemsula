@@ -46,7 +46,7 @@ export default function RootLayout({
           <AlertProvider>
             {children}
             <GlobalAlert />
-            {process.env.NODE_ENV === 'development' && <RecaptchaTestingPanel />}
+            <RecaptchaTestingPanel />
           </AlertProvider>
         </RecaptchaEnterpriseProvider>
       </body>
